@@ -21,6 +21,9 @@ class REDSANDS_API ACameraPlayerController : public APlayerController
 protected:
 	UPROPERTY(VisibleAnywhere)
 	APlayerPawn* PlayerPawn;
+
+	UPROPERTY()
+	AActor* SelectedActor;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category= Input)
 	UInputMap* InputMap;
@@ -37,4 +40,10 @@ protected:
 
 	UFUNCTION()
 	void Zoom(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void Select(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void UnitAction(const FInputActionValue& Value);
 };

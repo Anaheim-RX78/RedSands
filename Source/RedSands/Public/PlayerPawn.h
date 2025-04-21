@@ -31,12 +31,16 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	//RICEVE INPUT DAL PLAYER CONTROLLER PER GESTIRE IL MOVIMENTO DELLA CAMERA TRAMITE (WASD)
+	UFUNCTION()
 	void SetMovementInput(const FVector2D& MovementInput);
 	//RICEVE INPUT DAL PLAYER CONTROLLER PER GESTIRE LA "ROTAZIONE" DELLE TELECAMERA CON (Q) E (E)
+	UFUNCTION()
 	void SetRotateInput(const float& RotationInput);
 	//RICEVE INPUT DAL PLAYER CONTROLLER PER GESTIRE LO ZOOM DELLA TELECAMERA CON (MOUSE SCROLL)
+	UFUNCTION()
 	void SetZoomInput(const float& ZoomInput);
-
+	UFUNCTION()
+	void SelectManager();
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
