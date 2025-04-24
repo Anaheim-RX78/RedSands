@@ -120,15 +120,18 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 		{
 			if (Unit->bCanMove)
 			{
-				FHitResult Hit;
-				
-				if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+				if (Unit->TeamIDU == PlayerPawn->TeamIDP)
 				{
-					FVector TargetLocation = Hit.ImpactPoint;
+					FHitResult Hit;
+				
+					if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+					{
+						FVector TargetLocation = Hit.ImpactPoint;
 					
-					DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
+						DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
 					
-					Unit->MovementAction(TargetLocation);
+						Unit->MovementAction(TargetLocation);
+					}
 				}
 			}
 		}

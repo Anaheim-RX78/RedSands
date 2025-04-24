@@ -23,6 +23,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* SpringArm;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category= Gameplay)
+	int TeamIDP;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -39,8 +42,6 @@ public:
 	//RICEVE INPUT DAL PLAYER CONTROLLER PER GESTIRE LO ZOOM DELLA TELECAMERA CON (MOUSE SCROLL)
 	UFUNCTION()
 	void SetZoomInput(const float& ZoomInput);
-	UFUNCTION()
-	void SelectManager();
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

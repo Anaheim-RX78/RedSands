@@ -24,6 +24,12 @@ public:
 	bool bCanMove = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int TeamIDU;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* SelectionBase;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

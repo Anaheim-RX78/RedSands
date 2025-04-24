@@ -16,13 +16,14 @@ APlayerPawn::APlayerPawn()
 	SpringArm->SetupAttachment(RootComponent);
 	Camera->SetupAttachment(SpringArm);
 	SpringArm->bDoCollisionTest = false;
+	
 }
 
 // Called when the game starts or when spawned
 void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	SpringArm->TargetArmLength = 1000.f;
 }
 
 // Called every frame
@@ -66,13 +67,6 @@ void APlayerPawn::SetZoomInput(const float& ZoomInput)
 	//ASSEGNARE VALORE MASSIMO E MINIMO DELLO ZOOM
 	SpringArm->TargetArmLength = NewZoom;
 }
-
-void APlayerPawn::SelectManager()
-{
-	
-		
-}
-
 
 void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
