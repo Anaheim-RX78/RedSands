@@ -1,6 +1,6 @@
 #include "UnitClass.h"
 #include "AIController.h"
-#include "AI/Navigation/NavigationTypes.h"
+#include "CustomAIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 AUnitClass::AUnitClass()
@@ -25,10 +25,9 @@ AUnitClass::AUnitClass()
 	GetCharacterMovement()->MaxWalkSpeed = 1000.0f;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	AIControllerClass = AAIController::StaticClass();
+	AIControllerClass = ACustomAIController::StaticClass();
 }
 
 

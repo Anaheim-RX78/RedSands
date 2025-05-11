@@ -8,6 +8,8 @@
 #include "EnhancedInputComponent.h"
 #include "InputMap.h"
 #include "PlayerPawn.h"
+#include "EngineUtils.h"
+#include "ToDownHUD.h"
 #include "CameraPlayerController.generated.h"
 
 /**
@@ -24,6 +26,18 @@ protected:
 
 	UPROPERTY()
 	AActor* SelectedActor;
+
+	UPROPERTY()
+	TArray<AActor*> SelectedActors;
+
+	UPROPERTY()
+	TObjectPtr<AToDownHUD> TopDownHud;
+
+	UPROPERTY()
+	FVector2D SelectionStartPosition;
+
+	UPROPERTY()
+	FVector2D SelectionSize;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category= Input)
 	UInputMap* InputMap;
@@ -32,6 +46,8 @@ protected:
 
 	virtual void OnPossess(APawn* InPawn) override;
 
+	virtual void BeginPlay() override;
+	
 	UFUNCTION()
 	void Move(const FInputActionValue& Value);
 	
@@ -43,8 +59,19 @@ protected:
 	
 	UFUNCTION()
 	void Select(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void MultipleSelectStart(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void MultipleSelectOnGoing(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void MultipleSelectEnd(const FInputActionValue& Value);
 	
 	UFUNCTION()
 	void UnitAction(const FInputActionValue& Value);
-	
+
+	UFUNCTION()
+	void MultiSelectActors(TArray<AActor*> BoxSelectActors);
 };
