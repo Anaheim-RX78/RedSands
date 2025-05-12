@@ -21,8 +21,8 @@ AUnitClass::AUnitClass()
 	SelectionBase->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	SelectionBase->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Block);
 	SelectionBase->SetCollisionResponseToAllChannels(ECR_Ignore);
-	
-	GetCharacterMovement()->MaxWalkSpeed = 1000.0f;
+
+	GetCharacterMovement()->MaxWalkSpeed = 0;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	
@@ -53,6 +53,13 @@ void AUnitClass::OnSelected_Implementation(bool bIsSelected)
 
 	SelectionBase->SetVisibility(bIsSelected);
 }
+
+void AUnitClass::OnDamaged_Implementation(float DamageAmount)
+{
+	IDamageInterface::OnDamaged_Implementation(DamageAmount);
+	Health-= DamageAmount;
+}
+
 
 void AUnitClass::MovementAction(FVector Location)
 {

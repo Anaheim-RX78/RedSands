@@ -91,7 +91,7 @@ void ACameraPlayerController::Zoom(const FInputActionValue& Value)
 
 void ACameraPlayerController::Select(const FInputActionValue& Value)
 {
-	// First: Deselect ALL multi-selected actors
+	//Deselect ALL multi-selected actors
 	for (AActor* Actor : SelectedActors)
 	{
 		if (Actor && Actor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
@@ -169,12 +169,10 @@ void ACameraPlayerController::MultipleSelectEnd(const FInputActionValue& Value)
 
 	if (FMath::Abs(SelectionDelta.X) < DragThreshold && FMath::Abs(SelectionDelta.Y) < DragThreshold)
 	{
-		// Treat this as a click — call single unit select
 		Select(Value);
 		return;
 	}
-
-	// Continue with multi-select (what you already have)
+	
 	FVector2D TopLeft(FMath::Min(SelectionStartPosition.X, MouseX), FMath::Min(SelectionStartPosition.Y, MouseY));
 	FVector2D BottomRight(FMath::Max(SelectionStartPosition.X, MouseX), FMath::Max(SelectionStartPosition.Y, MouseY));
 	FVector2D TopRight(BottomRight.X, TopLeft.Y);

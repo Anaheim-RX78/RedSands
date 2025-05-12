@@ -3,10 +3,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "SelectInterface.h"
+#include "DamageInterface.h"
 #include "UnitClass.generated.h"
 
 UCLASS()
-class REDSANDS_API AUnitClass : public ACharacter, public ISelectInterface
+class REDSANDS_API AUnitClass : public ACharacter, public ISelectInterface,public IDamageInterface
 {
 	GENERATED_BODY()
 
@@ -30,6 +31,9 @@ public:
 	float AttackRange;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Speed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* SelectionBase;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -42,7 +46,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void OnSelected_Implementation(bool bIsSelected) override;
+	virtual void OnSelected_Implementation(bool bIsSelected)override;
+	virtual void OnDamaged_Implementation(float DamageAmount) override;
 
 	virtual void MovementAction(FVector Location);
 };

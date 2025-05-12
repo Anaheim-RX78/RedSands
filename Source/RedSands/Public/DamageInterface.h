@@ -4,20 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "SelectInterface.generated.h"
+#include "DamageInterface.generated.h"
 
+// This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class USelectInterface : public UInterface
+class UDamageInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class REDSANDS_API ISelectInterface
+/**
+ * 
+ */
+class REDSANDS_API IDamageInterface
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Selection")
-	void OnSelected(bool bIsSelected);
+	void OnDamaged(float DamageAmount);
 };
-
