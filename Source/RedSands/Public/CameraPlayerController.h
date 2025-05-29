@@ -73,5 +73,8 @@ protected:
 	void UnitAction(const FInputActionValue& Value);
 
 	UFUNCTION()
+	void AttackOrder(AActor* UnitActor, AActor* TargetActor);
+
+	UFUNCTION()
 	void MultiSelectActors(TArray<AActor*> BoxSelectActors);
 };

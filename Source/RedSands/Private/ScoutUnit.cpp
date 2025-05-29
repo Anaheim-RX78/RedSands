@@ -22,6 +22,7 @@ void AScoutUnit::BeginPlay()
 	Health = 100.f;
 	Battery = 1000.f;
 	Speed = 1000.f;
+	AttackRange = 500.f;
 	GetCharacterMovement()->MaxWalkSpeed = Speed;
 }
 

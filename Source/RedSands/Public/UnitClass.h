@@ -34,6 +34,9 @@ public:
 	float Speed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	AActor* CurrentTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* SelectionBase;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

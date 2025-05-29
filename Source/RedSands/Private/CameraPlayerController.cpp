@@ -3,6 +3,8 @@
 
 #include "CameraPlayerController.h"
 
+#include "AIController.h"
+#include "CustomAIController.h"
 #include "SelectInterface.h"
 #include "UnitClass.h"
 
@@ -234,27 +236,67 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 	{
 		if (AUnitClass* Unit = Cast<AUnitClass>(SelectedActor))
 		{
-			if (Unit->bCanMove)
+			if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
 			{
-				if (Unit->TeamIDU == PlayerPawn->TeamIDP)
+				FHitResult Hit;
+				bool bDidAttack = false;
+
+				if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
 				{
-					FHitResult Hit;
-				
-					if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+					AActor* HitActor = Hit.GetActor();
+					if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
 					{
-						FVector TargetLocation = Hit.ImpactPoint;
-					
-						DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
-					
-						Unit->MovementAction(TargetLocation);
+						if (AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor))
+						{
+							if (TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
+							{
+								AttackOrder(Unit, TargetUnit);
+								bDidAttack = true;
+							}
+						}
 					}
+				}
+				
+				if (!bDidAttack && GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+				{
+					FVector TargetLocation = Hit.ImpactPoint;
+
+					DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
+
+					Unit->MovementAction(TargetLocation);
 				}
 			}
 		}
 	}
+
 	else if (!SelectedActors.IsEmpty())
 	{
 		FHitResult Hit;
+		
+		if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
+		{
+			AActor* HitActor = Hit.GetActor();
+			if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+			{
+				AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor);
+				if (TargetUnit && TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
+				{
+					for (AActor* Actor : SelectedActors)
+					{
+						if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
+						{
+							if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+							{
+								AttackOrder(Unit,HitActor);
+							}
+						}
+					}
+
+					return;
+				}
+			}
+		}
+		
 		if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
 		{
 			FVector TargetLocation = Hit.ImpactPoint;
@@ -273,10 +315,26 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 			}
 		}
 	}
+
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No unit selected, move command ignored"));
 	}
+}
+
+void ACameraPlayerController::AttackOrder(AActor* UnitActor, AActor* TargetActor)
+{
+	GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("ATTACKING"));
+	if (AUnitClass* Unit = Cast<AUnitClass>(UnitActor))
+	{
+		Unit->CurrentTarget = TargetActor;
+		if (Unit->CurrentTarget)
+		{
+			AAIController* UnitController = Cast<ACustomAIController>(Unit->GetController());
+			UnitController->MoveToActor(TargetActor,Unit->AttackRange);
+		}
+	}
+	
 }
 
 void ACameraPlayerController::MultiSelectActors(TArray<AActor*> BoxSelectActors)
