@@ -21,6 +21,6 @@ class REDSANDS_API IDamageInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Selection")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damaging")
 	void OnDamaged(float DamageAmount);
 };

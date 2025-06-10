@@ -6,6 +6,15 @@
 #include "DamageInterface.h"
 #include "UnitClass.generated.h"
 
+
+UENUM(BlueprintType)
+enum class EUnitState : uint8
+{
+	Idle,
+	Moving,
+	Attacking
+};
+
 UCLASS()
 class REDSANDS_API AUnitClass : public ACharacter, public ISelectInterface,public IDamageInterface
 {
@@ -15,6 +24,9 @@ public:
 	// Sets default values for this character's properties
 	AUnitClass();
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	EUnitState CurrentState;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health;
 
@@ -22,7 +34,13 @@ public:
 	float Battery;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bCanMove = true;
+	bool bCanMove;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCanAttack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bFollowingOrders;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int TeamIDU;
@@ -30,6 +48,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AttackRange;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AttackDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AttackInterval;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AggroRange;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Speed;
 
@@ -45,13 +72,26 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	UPROPERTY()
+	FTimerHandle AttackTimerHandle;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void OnSelected_Implementation(bool bIsSelected)override;
 	virtual void OnDamaged_Implementation(float DamageAmount) override;
-
+	
+	UFUNCTION()
 	virtual void MovementAction(FVector Location);
+
+	UFUNCTION()
+	virtual void ProximityAggro();
+	
+	UFUNCTION()
+	virtual void AttackAction(AActor* Enemy);
+	
+	UFUNCTION()
+	virtual void PursueEnemy(AActor* Enemy);
 };
 

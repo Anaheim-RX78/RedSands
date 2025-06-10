@@ -37,7 +37,7 @@ void ACameraPlayerController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(InputMap->Actions["Rotate Camera"], ETriggerEvent::Triggered, this, &ACameraPlayerController::Rotate);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Zoom Camera"], ETriggerEvent::Triggered, this, &ACameraPlayerController::Zoom);
 	//EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Completed, this, &ACameraPlayerController::Select);
-	EnhancedInputComponent->BindAction(InputMap->Actions["Action Unit"], ETriggerEvent::Triggered, this, &ACameraPlayerController::UnitAction);
+	EnhancedInputComponent->BindAction(InputMap->Actions["Action Unit"], ETriggerEvent::Started, this, &ACameraPlayerController::UnitAction);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Started, this, &ACameraPlayerController::MultipleSelectStart);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Triggered, this, &ACameraPlayerController::MultipleSelectOnGoing);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Completed, this, &ACameraPlayerController::MultipleSelectEnd);
@@ -240,7 +240,7 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 			{
 				FHitResult Hit;
 				bool bDidAttack = false;
-
+				Unit->CurrentTarget = nullptr;
 				if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
 				{
 					AActor* HitActor = Hit.GetActor();
@@ -287,6 +287,7 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 						{
 							if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
 							{
+								Unit->CurrentTarget = nullptr;
 								AttackOrder(Unit,HitActor);
 							}
 						}
@@ -324,16 +325,19 @@ void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
 
 void ACameraPlayerController::AttackOrder(AActor* UnitActor, AActor* TargetActor)
 {
-	GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("ATTACKING"));
+	
 	if (AUnitClass* Unit = Cast<AUnitClass>(UnitActor))
 	{
 		Unit->CurrentTarget = TargetActor;
+		Unit->bFollowingOrders = true;
+		Unit->CurrentState = EUnitState::Attacking;
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("BIG ORDER")));
 		if (Unit->CurrentTarget)
 		{
 			AAIController* UnitController = Cast<ACustomAIController>(Unit->GetController());
 			UnitController->MoveToActor(TargetActor,Unit->AttackRange);
 		}
-	}
+	} 
 	
 }
 

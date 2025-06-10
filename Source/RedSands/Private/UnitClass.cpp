@@ -2,6 +2,7 @@
 #include "AIController.h"
 #include "CustomAIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 AUnitClass::AUnitClass()
 {
@@ -39,6 +40,22 @@ void AUnitClass::BeginPlay()
 void AUnitClass::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (CurrentState == EUnitState::Moving)
+	{
+		if (GetCharacterMovement()->Velocity.IsNearlyZero() && !bFollowingOrders)
+		{
+			CurrentState = EUnitState::Idle;
+		}
+	}
+	else if (CurrentState == EUnitState::Idle && !bFollowingOrders)
+	{
+		ProximityAggro();
+	}
+	else if (CurrentState == EUnitState::Attacking)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("DID WE GET HERE OR NOT?")));
+		AttackAction(CurrentTarget);
+	}
 }
 
 
@@ -57,7 +74,6 @@ void AUnitClass::OnSelected_Implementation(bool bIsSelected)
 void AUnitClass::OnDamaged_Implementation(float DamageAmount)
 {
 	IDamageInterface::OnDamaged_Implementation(DamageAmount);
-	Health-= DamageAmount;
 }
 
 
@@ -66,11 +82,14 @@ void AUnitClass::MovementAction(FVector Location)
 	if (bCanMove)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Trying to move to: %s"), *Location.ToString());
+		CurrentTarget = nullptr;
+		CurrentState = EUnitState::Moving;
+		bFollowingOrders = true;
 
 		if (AAIController* AIController = Cast<AAIController>(GetController()))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("AIController found: %s"), *AIController->GetName());
-			AIController->MoveToLocation(Location, 10.0f);
+			AIController->MoveToLocation(Location, 20.0f);
 		}
 		else
 		{
@@ -79,4 +98,69 @@ void AUnitClass::MovementAction(FVector Location)
 	}
 }
 
+void AUnitClass::ProximityAggro()
+{
+/*	TArray<AActor*> OverlappingActors;
 
+	AActor* ClosestEnemy = nullptr;
+	float ClosestDistance = AggroRange;
+	
+	UKismetSystemLibrary::SphereOverlapActors(
+	   GetWorld(),
+	   GetActorLocation(),
+	   AggroRange,
+	   TArray<TEnumAsByte<EObjectTypeQuery>>{ UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_EngineTraceChannel1) },
+	   nullptr,
+	   TArray<AActor*>{ this },
+	   OverlappingActors);
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		AUnitClass* Enemy = Cast<AUnitClass>(Actor);
+		if (TeamIDU != Enemy->TeamIDU)
+		{
+			float Distance = FVector::Dist(GetActorLocation(), Actor->GetActorLocation());
+			if (Distance < ClosestDistance)
+			{
+				ClosestEnemy = Actor;
+				ClosestDistance = Distance;
+			}
+		}
+	}
+
+	if (ClosestEnemy)
+	{
+		CurrentTarget = ClosestEnemy;
+		if (ClosestDistance <= AttackRange)
+		{
+			AttackAction(CurrentTarget);
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("PURSUEING"));
+			PursueEnemy(CurrentTarget);
+		}
+	}
+	else
+	{
+		CurrentTarget = nullptr;
+		if (AAIController* AIController = Cast<AAIController>(GetController()))
+		{
+			AIController->StopMovement();
+		}
+	}*/
+	
+}
+void AUnitClass::AttackAction(AActor* Enemy)
+{
+
+}
+
+void AUnitClass::PursueEnemy(AActor* Enemy)
+{
+	if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+	{
+		CurrentState = EUnitState::Moving;
+		AIController->MoveToActor(Enemy, AttackRange - 10.0f);
+	}
+}
