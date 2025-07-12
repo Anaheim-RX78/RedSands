@@ -38,6 +38,9 @@ protected:
 
 	UPROPERTY()
 	FVector2D SelectionSize;
+
+	UPROPERTY()
+	AActor* PlayerMCV;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category= Input)
 	UInputMap* InputMap;
@@ -68,9 +71,21 @@ protected:
 	
 	UFUNCTION()
 	void MultipleSelectEnd(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void SelectMCV(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void SelectCombatUnits(const FInputActionValue& Value);
 	
 	UFUNCTION()
 	void UnitAction(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void AttackMove(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void UnitAbility(const FInputActionValue& Value);
 
 	UFUNCTION()
 	void AttackOrder(AActor* UnitActor, AActor* TargetActor);

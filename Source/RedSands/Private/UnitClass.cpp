@@ -1,6 +1,7 @@
 #include "UnitClass.h"
 #include "AIController.h"
 #include "CustomAIController.h"
+#include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -39,26 +40,87 @@ void AUnitClass::BeginPlay()
 
 void AUnitClass::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-	if (CurrentState == EUnitState::Moving)
-	{
-		if (GetCharacterMovement()->Velocity.IsNearlyZero() && !bFollowingOrders)
-		{
-			CurrentState = EUnitState::Idle;
-		}
-	}
-	else if (CurrentState == EUnitState::Idle && !bFollowingOrders)
-	{
-		ProximityAggro();
-	}
-	else if (CurrentState == EUnitState::Attacking)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("DID WE GET HERE OR NOT?")));
-		AttackAction(CurrentTarget);
-	}
+    Super::Tick(DeltaTime);
+
+    if (CurrentState == EUnitState::Moving)
+    {
+        if (bAttackMove)
+        {
+            UpdateAttackMove(); // Check for enemies during movement
+        }
+
+        if (GetCharacterMovement()->Velocity.IsNearlyZero() && !bFollowingOrders)
+        {
+            CurrentState = EUnitState::Idle;
+            if (CurrentTarget && IsValid(CurrentTarget))
+            {
+                float CapsuleOffset = 200.0f;
+                float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
+                float DistanceToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
+                UE_LOG(LogTemp, Log, TEXT("Unit %s: Move completed, Distance to %s: %f (Effective Range: %f)"), 
+                       *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange);
+                if (DistanceToTarget <= EffectiveAttackRange)
+                {
+                    CurrentState = EUnitState::Attacking;
+                    bFollowingOrders = true;
+                }
+                else
+                {
+                    CurrentState = EUnitState::Pursuing;
+                    bFollowingOrders = true;
+                    PursueEnemy(CurrentTarget);
+                }
+            }
+            else if (bAttackMove)
+            {
+                // Reached destination, no enemies found
+                CurrentState = EUnitState::Idle;
+                bAttackMove = false;
+                bFollowingOrders = false;
+                AttackMoveTarget = FVector::ZeroVector;
+                UE_LOG(LogTemp, Log, TEXT("Unit %s: Reached attack move target %s, no enemies found"), *GetName(), *AttackMoveTarget.ToString());
+            }
+        }
+    }
+    else if (CurrentState == EUnitState::Idle && !bFollowingOrders)
+    {
+        ProximityAggro();
+    }
+    else if (CurrentState == EUnitState::Attacking)
+    {
+        AttackAction(CurrentTarget);
+    }
+    else if (CurrentState == EUnitState::Pursuing)
+    {
+        if (CurrentTarget && IsValid(CurrentTarget))
+        {
+            float CapsuleOffset = 200.0f;
+            float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
+            float DistanceToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Unit %s: Pursuing %s, Distance: %f (Effective Range: %f)"), *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange));
+            if (DistanceToTarget <= EffectiveAttackRange)
+            {
+                CurrentState = EUnitState::Attacking;
+                bFollowingOrders = true;
+                AttackAction(CurrentTarget);
+            }
+            else
+            {
+                PursueEnemy(CurrentTarget);
+            }
+        }
+        else
+        {
+            CurrentState = EUnitState::Idle;
+            bFollowingOrders = false;
+            CurrentTarget = nullptr;
+            if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+            {
+                AIController->StopMovement();
+            }
+        }
+    }
 }
-
-
 void AUnitClass::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -81,8 +143,7 @@ void AUnitClass::MovementAction(FVector Location)
 {
 	if (bCanMove)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Trying to move to: %s"), *Location.ToString());
-		CurrentTarget = nullptr;
+		//UE_LOG(LogTemp, Warning, TEXT("Trying to move to: %s"), *Location.ToString());
 		CurrentState = EUnitState::Moving;
 		bFollowingOrders = true;
 
@@ -100,55 +161,6 @@ void AUnitClass::MovementAction(FVector Location)
 
 void AUnitClass::ProximityAggro()
 {
-/*	TArray<AActor*> OverlappingActors;
-
-	AActor* ClosestEnemy = nullptr;
-	float ClosestDistance = AggroRange;
-	
-	UKismetSystemLibrary::SphereOverlapActors(
-	   GetWorld(),
-	   GetActorLocation(),
-	   AggroRange,
-	   TArray<TEnumAsByte<EObjectTypeQuery>>{ UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_EngineTraceChannel1) },
-	   nullptr,
-	   TArray<AActor*>{ this },
-	   OverlappingActors);
-
-	for (AActor* Actor : OverlappingActors)
-	{
-		AUnitClass* Enemy = Cast<AUnitClass>(Actor);
-		if (TeamIDU != Enemy->TeamIDU)
-		{
-			float Distance = FVector::Dist(GetActorLocation(), Actor->GetActorLocation());
-			if (Distance < ClosestDistance)
-			{
-				ClosestEnemy = Actor;
-				ClosestDistance = Distance;
-			}
-		}
-	}
-
-	if (ClosestEnemy)
-	{
-		CurrentTarget = ClosestEnemy;
-		if (ClosestDistance <= AttackRange)
-		{
-			AttackAction(CurrentTarget);
-		}
-		else
-		{
-			GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("PURSUEING"));
-			PursueEnemy(CurrentTarget);
-		}
-	}
-	else
-	{
-		CurrentTarget = nullptr;
-		if (AAIController* AIController = Cast<AAIController>(GetController()))
-		{
-			AIController->StopMovement();
-		}
-	}*/
 	
 }
 void AUnitClass::AttackAction(AActor* Enemy)
@@ -156,11 +168,104 @@ void AUnitClass::AttackAction(AActor* Enemy)
 
 }
 
+void AUnitClass::Ability()
+{
+	
+}
+
 void AUnitClass::PursueEnemy(AActor* Enemy)
 {
-	if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+	if (Enemy && IsValid(Enemy))
 	{
-		CurrentState = EUnitState::Moving;
-		AIController->MoveToActor(Enemy, AttackRange - 10.0f);
+		if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+		{
+			CurrentState = EUnitState::Pursuing;
+			bFollowingOrders = true;
+			float AcceptanceRadius = 350.0f; // Reduced to account for capsule radii (~90–115 units each)
+			EPathFollowingRequestResult::Type Result = AIController->MoveToActor(Enemy, AcceptanceRadius);
+			/*UE_LOG(LogTemp, Log, TEXT("Unit %s: Pursuing %s with acceptance radius %f, MoveToActor result: %d"), 
+				   *GetName(), *Enemy->GetName(), AcceptanceRadius, (int32)Result);*/
+
+			// Debug visualization
+			DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AcceptanceRadius, 12, FColor::Blue, false, 0.1f);
+			DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AttackRange, 12, FColor::Red, false, 0.1f);
+
+			// Log actual distance to confirm stopping point
+			float DistanceToEnemy = FVector::Dist(GetActorLocation(), Enemy->GetActorLocation());
+			//UE_LOG(LogTemp, Log, TEXT("Unit %s: Current distance to %s: %f"), *GetName(), *Enemy->GetName(), DistanceToEnemy);
+		}
 	}
+	else
+	{
+		CurrentState = EUnitState::Idle;
+		bFollowingOrders = false;
+		CurrentTarget = nullptr;
+		if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+		{
+			AIController->StopMovement();
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Unit %s: Pursuit failed - Enemy invalid"), *GetName());
+	}
+}
+
+void AUnitClass::StartAttackMove(FVector TargetLocation)
+{
+    if (bCanMove)
+    {
+        AttackMoveTarget = TargetLocation;
+        bAttackMove = true;
+        CurrentState = EUnitState::Moving;
+        bFollowingOrders = true;
+        UE_LOG(LogTemp, Log, TEXT("Unit %s: Starting attack move to %s"), *GetName(), *TargetLocation.ToString());
+
+        if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
+        {
+            AIController->MoveToLocation(TargetLocation, 20.0f); // Use default acceptance radius
+        }
+    }
+}
+
+void AUnitClass::UpdateAttackMove()
+{
+    if (bAttackMove)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Unit %s: Updating attack move, checking for enemies"), *GetName());
+        // Check for nearby enemies
+        AActor* ClosestEnemy = nullptr;
+        float ClosestDistance = AggroRange; // 500.0f for AScoutUnit
+        for (TActorIterator<AUnitClass> It(GetWorld()); It; ++It)
+        {
+            AUnitClass* OtherUnit = *It;
+            if (OtherUnit && OtherUnit != this && OtherUnit->TeamIDU != TeamIDU)
+            {
+                float Distance = FVector::Dist(GetActorLocation(), OtherUnit->GetActorLocation());
+                if (Distance < ClosestDistance)
+                {
+                    ClosestDistance = Distance;
+                    ClosestEnemy = OtherUnit;
+                }
+            }
+        }
+
+        if (ClosestEnemy)
+        {
+            CurrentTarget = ClosestEnemy;
+            bFollowingOrders = true;
+            float CapsuleOffset = 200.0f;
+            float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
+            if (ClosestDistance <= EffectiveAttackRange)
+            {
+                CurrentState = EUnitState::Attacking;
+                AttackAction(CurrentTarget);
+                UE_LOG(LogTemp, Log, TEXT("Unit %s: Attacking detected enemy %s, Distance: %f"), *GetName(), *ClosestEnemy->GetName(), ClosestDistance);
+            }
+            else
+            {
+                CurrentState = EUnitState::Pursuing;
+                PursueEnemy(CurrentTarget);
+                UE_LOG(LogTemp, Log, TEXT("Unit %s: Pursuing detected enemy %s, Distance: %f"), *GetName(), *ClosestEnemy->GetName(), ClosestDistance);
+            }
+        }
+        // No else clause; continue moving if no enemy is found
+    }
 }

@@ -5,6 +5,7 @@
 
 #include "AIController.h"
 #include "CustomAIController.h"
+#include "MCVUnit.h"
 #include "SelectInterface.h"
 #include "UnitClass.h"
 
@@ -38,9 +39,13 @@ void ACameraPlayerController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(InputMap->Actions["Zoom Camera"], ETriggerEvent::Triggered, this, &ACameraPlayerController::Zoom);
 	//EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Completed, this, &ACameraPlayerController::Select);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Action Unit"], ETriggerEvent::Started, this, &ACameraPlayerController::UnitAction);
+	EnhancedInputComponent->BindAction(InputMap->Actions["Attack Move"], ETriggerEvent::Started, this, &ACameraPlayerController::AttackMove);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Started, this, &ACameraPlayerController::MultipleSelectStart);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Triggered, this, &ACameraPlayerController::MultipleSelectOnGoing);
 	EnhancedInputComponent->BindAction(InputMap->Actions["Select Unit"], ETriggerEvent::Completed, this, &ACameraPlayerController::MultipleSelectEnd);
+	EnhancedInputComponent->BindAction(InputMap->Actions["Ability Unit"], ETriggerEvent::Started, this, &ACameraPlayerController::UnitAbility);
+	EnhancedInputComponent->BindAction(InputMap->Actions["Select MCV"], ETriggerEvent::Started, this, &ACameraPlayerController::SelectMCV);
+	EnhancedInputComponent->BindAction(InputMap->Actions["Select Combat Units"], ETriggerEvent::Started, this, &ACameraPlayerController::SelectCombatUnits);
 }
 
 void ACameraPlayerController::OnPossess(APawn* InPawn)
@@ -53,6 +58,16 @@ void ACameraPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	TopDownHud = Cast<AToDownHUD>(GetHUD());
+
+	for (TActorIterator<AMCVUnit> It(GetWorld()); It; ++It)
+	{
+		AMCVUnit* MCV = *It;
+		if (MCV && MCV->TeamIDU == PlayerPawn->TeamIDP)
+		{
+			PlayerMCV = MCV;
+			break;
+		}
+	}
 }
 
 void ACameraPlayerController::Move(const FInputActionValue& Value)
@@ -229,116 +244,243 @@ void ACameraPlayerController::MultipleSelectEnd(const FInputActionValue& Value)
 	MultiSelectActors(NewlySelected);
 }
 
-
-void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
+void ACameraPlayerController::SelectMCV(const FInputActionValue& Value)
 {
-	if (SelectedActor) 
+	if (PlayerMCV && IsValid(PlayerMCV))
 	{
-		if (AUnitClass* Unit = Cast<AUnitClass>(SelectedActor))
+		// Clear current selection
+		if (SelectedActor)
 		{
-			if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+			ISelectInterface::Execute_OnSelected(SelectedActor, false);
+			SelectedActor = nullptr;
+		}
+		for (AActor* Actor : SelectedActors)
+		{
+			if (Actor && Actor->Implements<USelectInterface>())
 			{
-				FHitResult Hit;
-				bool bDidAttack = false;
-				Unit->CurrentTarget = nullptr;
-				if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
-				{
-					AActor* HitActor = Hit.GetActor();
-					if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
-					{
-						if (AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor))
-						{
-							if (TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
-							{
-								AttackOrder(Unit, TargetUnit);
-								bDidAttack = true;
-							}
-						}
-					}
-				}
-				
-				if (!bDidAttack && GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
-				{
-					FVector TargetLocation = Hit.ImpactPoint;
-
-					DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
-
-					Unit->MovementAction(TargetLocation);
-				}
+				ISelectInterface::Execute_OnSelected(Actor, false);
 			}
 		}
-	}
+		SelectedActors.Empty();
 
-	else if (!SelectedActors.IsEmpty())
-	{
-		FHitResult Hit;
-		
-		if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
-		{
-			AActor* HitActor = Hit.GetActor();
-			if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
-			{
-				AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor);
-				if (TargetUnit && TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
-				{
-					for (AActor* Actor : SelectedActors)
-					{
-						if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
-						{
-							if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
-							{
-								Unit->CurrentTarget = nullptr;
-								AttackOrder(Unit,HitActor);
-							}
-						}
-					}
-
-					return;
-				}
-			}
-		}
-		
-		if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
-		{
-			FVector TargetLocation = Hit.ImpactPoint;
-
-			DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
-
-			for (AActor* Actor : SelectedActors)
-			{
-				if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
-				{
-					if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
-					{
-						Unit->MovementAction(TargetLocation);
-					}
-				}
-			}
-		}
-	}
-
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No unit selected, move command ignored"));
+		// Select the MCV
+		SelectedActor = PlayerMCV;
+		ISelectInterface::Execute_OnSelected(PlayerMCV, true);
 	}
 }
 
-void ACameraPlayerController::AttackOrder(AActor* UnitActor, AActor* TargetActor)
+void ACameraPlayerController::SelectCombatUnits(const FInputActionValue& Value)
 {
 	
+	// Deselect current selection to avoid overlap
+	if (SelectedActor)
+	{
+		ISelectInterface::Execute_OnSelected(SelectedActor, false);
+		SelectedActor = nullptr;
+	}
+	for (AActor* Actor : SelectedActors)
+	{
+		if (Actor && Actor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+		{
+			ISelectInterface::Execute_OnSelected(Actor, false);
+		}
+	}
+	SelectedActors.Empty();
+
+	// Iterate through all units to find combat units
+	TArray<AActor*> CombatUnits;
+	for (TActorIterator<AUnitClass> It(GetWorld()); It; ++It)
+	{
+		AUnitClass* Unit = *It;
+		if (Unit && Unit->bCanAttack && Unit->TeamIDU == PlayerPawn->TeamIDP)
+		{
+			CombatUnits.Add(Unit);
+		}
+	}
+
+	// Select all found combat units
+	for (AActor* Unit : CombatUnits)
+	{
+		if (Unit && Unit->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+		{
+			ISelectInterface::Execute_OnSelected(Unit, true);
+			SelectedActors.Add(Unit);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Selected all combat units: %d"), SelectedActors.Num());
+}
+
+
+void ACameraPlayerController::UnitAction(const FInputActionValue& Value)
+{
+    if (SelectedActor) 
+    {
+        if (AUnitClass* Unit = Cast<AUnitClass>(SelectedActor))
+        {
+            if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+            {
+                FHitResult Hit;
+                bool bDidAttack = false;
+                // Only clear CurrentTarget if issuing a new attack order
+                if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
+                {
+                    AActor* HitActor = Hit.GetActor();
+                    if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+                    {
+                        if (AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor))
+                        {
+                            if (TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
+                            {
+                                AttackOrder(Unit, TargetUnit);
+                                bDidAttack = true;
+                            }
+                        }
+                    }
+                }
+                
+                if (!bDidAttack && GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+                {
+                    FVector TargetLocation = Hit.ImpactPoint;
+                    DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
+                    Unit->MovementAction(TargetLocation);
+                }
+            }
+        }
+    }
+    else if (!SelectedActors.IsEmpty())
+    {
+        FHitResult Hit;
+        
+        if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, Hit))
+        {
+            AActor* HitActor = Hit.GetActor();
+            if (HitActor && HitActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+            {
+                AUnitClass* TargetUnit = Cast<AUnitClass>(HitActor);
+                if (TargetUnit && TargetUnit->TeamIDU != PlayerPawn->TeamIDP)
+                {
+                    for (AActor* Actor : SelectedActors)
+                    {
+                        if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
+                        {
+                            if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+                            {
+                                AttackOrder(Unit, HitActor);
+                            }
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+        
+        if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+        {
+            FVector TargetLocation = Hit.ImpactPoint;
+            DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Green, false, 2.0f);
+            for (AActor* Actor : SelectedActors)
+            {
+                if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
+                {
+                    if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+                    {
+                        Unit->MovementAction(TargetLocation);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No unit selected, move command ignored"));
+    }
+}
+
+void ACameraPlayerController::AttackMove(const FInputActionValue& Value)
+{
+	if (SelectedActor || !SelectedActors.IsEmpty())
+	{
+		FHitResult Hit;
+		if (GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), false, Hit))
+		{
+			FVector TargetLocation = Hit.ImpactPoint;
+			DrawDebugSphere(GetWorld(), TargetLocation, 25.0f, 12, FColor::Purple, false, 2.0f); // Purple for attack move
+
+			if (SelectedActor)
+			{
+				if (AUnitClass* Unit = Cast<AUnitClass>(SelectedActor))
+				{
+					if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+					{
+						Unit->StartAttackMove(TargetLocation);
+					}
+				}
+			}
+			else if (!SelectedActors.IsEmpty())
+			{
+				for (AActor* Actor : SelectedActors)
+				{
+					if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
+					{
+						if (Unit->bCanMove && Unit->TeamIDU == PlayerPawn->TeamIDP)
+						{
+							Unit->StartAttackMove(TargetLocation);
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No unit selected, attack move ignored"));
+	}
+}
+
+void ACameraPlayerController::UnitAbility(const FInputActionValue& Value)
+{
+	if (SelectedActor)
+	{
+		if (AUnitClass* Unit = Cast<AUnitClass>(SelectedActor))
+		{
+			Unit->Ability();
+		}
+	}
+	else if (!SelectedActors.IsEmpty())
+	{
+		for (AActor* Actor : SelectedActors)
+		{
+			if (AUnitClass* Unit = Cast<AUnitClass>(Actor))
+			{
+				Unit->Ability();
+			}
+		}
+	}
+}
+void ACameraPlayerController::AttackOrder(AActor* UnitActor, AActor* TargetActor)
+{
 	if (AUnitClass* Unit = Cast<AUnitClass>(UnitActor))
 	{
-		Unit->CurrentTarget = TargetActor;
-		Unit->bFollowingOrders = true;
-		Unit->CurrentState = EUnitState::Attacking;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("BIG ORDER")));
-		if (Unit->CurrentTarget)
+		if (TargetActor && IsValid(TargetActor))
 		{
-			AAIController* UnitController = Cast<ACustomAIController>(Unit->GetController());
-			UnitController->MoveToActor(TargetActor,Unit->AttackRange);
+			Unit->CurrentTarget = TargetActor;
+			Unit->bFollowingOrders = true;
+			float CapsuleOffset = 200.0f; // Match AttackAction
+			float EffectiveAttackRange = Unit->AttackRange + 10.0f + CapsuleOffset; // 710.0f
+			float DistanceToTarget = FVector::Dist(Unit->GetActorLocation(), TargetActor->GetActorLocation());
+			if (DistanceToTarget <= EffectiveAttackRange)
+			{
+				Unit->CurrentState = EUnitState::Attacking;
+			}
+			else
+			{
+				Unit->CurrentState = EUnitState::Pursuing;
+				Unit->PursueEnemy(TargetActor);
+			}
+		//	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack order issued for %s, Distance: %f"), *Unit->GetName(), *TargetActor->GetName(), DistanceToTarget));
 		}
-	} 
-	
+	}
 }
 
 void ACameraPlayerController::MultiSelectActors(TArray<AActor*> BoxSelectActors)

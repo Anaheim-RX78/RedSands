@@ -12,7 +12,8 @@ enum class EUnitState : uint8
 {
 	Idle,
 	Moving,
-	Attacking
+	Attacking,
+	Pursuing
 };
 
 UCLASS()
@@ -69,6 +70,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* PlaceholderMesh;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector AttackMoveTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAttackMove;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -90,8 +97,17 @@ public:
 	
 	UFUNCTION()
 	virtual void AttackAction(AActor* Enemy);
+
+	UFUNCTION()
+	virtual void Ability();
 	
 	UFUNCTION()
 	virtual void PursueEnemy(AActor* Enemy);
+
+	UFUNCTION()
+	void StartAttackMove(FVector TargetLocation);
+
+	UFUNCTION()
+	void UpdateAttackMove();
 };
 

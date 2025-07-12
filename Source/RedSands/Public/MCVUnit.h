@@ -4,20 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "UnitClass.h"
-#include "ScoutUnit.generated.h"
+#include "MCVUnit.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class REDSANDS_API AScoutUnit : public AUnitClass
+class REDSANDS_API AMCVUnit : public AUnitClass
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	bool bBuildMode;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float EnergizedAlloy;
+	
 	virtual void OnSelected_Implementation(bool bIsSelected) override;
 	virtual void OnDamaged_Implementation(float DamageAmount) override;
 	virtual void BeginPlay() override;
-	virtual void AttackAction(AActor* Enemy) override;
-	virtual void ProximityAggro() override;
 	virtual void Ability() override;
 };
