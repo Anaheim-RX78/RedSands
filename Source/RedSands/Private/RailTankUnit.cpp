@@ -1,24 +1,21 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ScoutUnit.h"
-
+#include "RailTankUnit.h"
 #include "CustomAIController.h"
 #include "EngineUtils.h"
 #include "Components/ProgressBar.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 
-
-void AScoutUnit::OnSelected_Implementation(bool bIsSelected)
+void ARailTankUnit::OnSelected_Implementation(bool bIsSelected)
 {
 	Super::OnSelected_Implementation(bIsSelected);
 }
 
-void AScoutUnit::OnDamaged_Implementation(float DamageAmount)
+void ARailTankUnit::OnDamaged_Implementation(float DamageAmount)
 {
-        // Update health
-    CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, Health);
+	 CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, Health);
     GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("%s Health: %f, MaxHealth: %f"), *GetName(), CurrentHealth, Health));
     float HealthPercent = Health > 0.0f ? CurrentHealth / Health : 0.0f;
     GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("Percent: %f"), HealthPercent));
@@ -68,27 +65,27 @@ void AScoutUnit::OnDamaged_Implementation(float DamageAmount)
     }
 }
 
-void AScoutUnit::BeginPlay()
+void ARailTankUnit::BeginPlay()
 {
 	Super::BeginPlay();
-	Health = 100.f;
-    CurrentHealth = 100.f;
-	Battery = 1000.f;
-	Speed = 1000.f;
-	AttackRange = 500.f;
-    AggroRange = 500.f;
-	AttackDamage = 25.f;
-	AttackInterval = 2.f;
-	bCanAttack = true;
-	bCanMove = true;
-	CurrentState = EUnitState::Idle;
-	bFollowingOrders = false;
-	GetCharacterMovement()->MaxWalkSpeed = Speed;
+    Health = 250.f;
+    CurrentHealth = 250.f;
+    Battery = 1000.f;
+    Speed = 700.f;
+    AttackRange = 1000.f;
+    AggroRange = 1000.f;
+    AttackDamage = 60.f;
+    AttackInterval = 3.5f;
+    bCanAttack = true;
+    bCanMove = true;
+    CurrentState = EUnitState::Idle;
+    bFollowingOrders = false;
+    GetCharacterMovement()->MaxWalkSpeed = Speed;
 }
 
-void AScoutUnit::AttackAction(AActor* Enemy)
+void ARailTankUnit::AttackAction(AActor* Enemy)
 {
-    // Validate the enemy
+	// Validate the enemy
     if (!Enemy || !IsValid(Enemy) || !bCanAttack)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack failed - Enemy invalid or cannot attack"), *GetName()));
@@ -170,9 +167,9 @@ void AScoutUnit::AttackAction(AActor* Enemy)
     }
 }
 
-void AScoutUnit::ProximityAggro()
+void ARailTankUnit::ProximityAggro()
 {
-    Super::ProximityAggro();
+	Super::ProximityAggro();
     if (CurrentTarget && IsValid(CurrentTarget)) return;
 
     AActor* ClosestEnemy = nullptr;
@@ -208,8 +205,7 @@ void AScoutUnit::ProximityAggro()
     }
 }
 
-void AScoutUnit::Ability()
+void ARailTankUnit::Ability()
 {
-    Super::Ability();
+	Super::Ability();
 }
-

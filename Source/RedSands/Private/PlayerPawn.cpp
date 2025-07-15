@@ -23,7 +23,7 @@ APlayerPawn::APlayerPawn()
 void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	SpringArm->TargetArmLength = 1000.f;
+	SpringArm->TargetArmLength = 3600.f;
 }
 
 // Called every frame
@@ -61,10 +61,13 @@ void APlayerPawn::SetZoomInput(const float& ZoomInput)
 	float NewZoom = ZoomInput * 50.f;
 	NewZoom += SpringArm->TargetArmLength;
 	
-	//GEngine->AddOnScreenDebugMessage(1, 0.1f, FColor::Red, FString::Printf(TEXT("Camera Zoom: %.2f"), NewZoom));
+	GEngine->AddOnScreenDebugMessage(1, 0.1f, FColor::Red, FString::Printf(TEXT("Camera Zoom: %.2f"), NewZoom));
 	
 	//TODO
 	//ASSEGNARE VALORE MASSIMO E MINIMO DELLO ZOOM
+
+	NewZoom = FMath::Clamp(NewZoom, 2000.f, 5000.f);
+	
 	SpringArm->TargetArmLength = NewZoom;
 }
 

@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "SelectInterface.h"
 #include "DamageInterface.h"
+#include "Components/WidgetComponent.h"
 #include "UnitClass.generated.h"
 
 
@@ -30,6 +31,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CurrentHealth;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Battery;
@@ -71,6 +75,14 @@ public:
 	UStaticMeshComponent* PlaceholderMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UWidgetComponent* HealthBarWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UUserWidget> HealthBarWidgetClass;
+
+	FTimerHandle HealthBarHideTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector AttackMoveTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -87,6 +99,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void OnSelected_Implementation(bool bIsSelected)override;
+	UFUNCTION(BlueprintCallable)
 	virtual void OnDamaged_Implementation(float DamageAmount) override;
 	
 	UFUNCTION()

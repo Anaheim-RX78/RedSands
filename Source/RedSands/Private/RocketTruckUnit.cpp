@@ -1,24 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ScoutUnit.h"
+#include "RocketTruckUnit.h"
 
-#include "CustomAIController.h"
 #include "EngineUtils.h"
 #include "Components/ProgressBar.h"
-
 #include "GameFramework/CharacterMovementComponent.h"
 
-
-void AScoutUnit::OnSelected_Implementation(bool bIsSelected)
+void ARocketTruckUnit::OnSelected_Implementation(bool bIsSelected)
 {
 	Super::OnSelected_Implementation(bIsSelected);
 }
 
-void AScoutUnit::OnDamaged_Implementation(float DamageAmount)
+void ARocketTruckUnit::OnDamaged_Implementation(float DamageAmount)
 {
-        // Update health
-    CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, Health);
+	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, Health);
     GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("%s Health: %f, MaxHealth: %f"), *GetName(), CurrentHealth, Health));
     float HealthPercent = Health > 0.0f ? CurrentHealth / Health : 0.0f;
     GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("Percent: %f"), HealthPercent));
@@ -68,25 +64,26 @@ void AScoutUnit::OnDamaged_Implementation(float DamageAmount)
     }
 }
 
-void AScoutUnit::BeginPlay()
+void ARocketTruckUnit::BeginPlay()
 {
-	Super::BeginPlay();
-	Health = 100.f;
-    CurrentHealth = 100.f;
-	Battery = 1000.f;
-	Speed = 1000.f;
-	AttackRange = 500.f;
-    AggroRange = 500.f;
-	AttackDamage = 25.f;
-	AttackInterval = 2.f;
-	bCanAttack = true;
-	bCanMove = true;
-	CurrentState = EUnitState::Idle;
-	bFollowingOrders = false;
-	GetCharacterMovement()->MaxWalkSpeed = Speed;
+    Super::BeginPlay();
+    Super::BeginPlay();
+    Health = 150.f;
+    CurrentHealth = 150.f;
+    Battery = 1000.f;
+    Speed = 800.f;
+    AttackRange = 1500.f;
+    AggroRange = 1500.f;
+    AttackDamage = 75.f;
+    AttackInterval = 5.f;
+    bCanAttack = true;
+    bCanMove = true;
+    CurrentState = EUnitState::Idle;
+    bFollowingOrders = false;
+    GetCharacterMovement()->MaxWalkSpeed = Speed;
 }
 
-void AScoutUnit::AttackAction(AActor* Enemy)
+void ARocketTruckUnit::AttackAction(AActor* Enemy)
 {
     // Validate the enemy
     if (!Enemy || !IsValid(Enemy) || !bCanAttack)
@@ -170,7 +167,7 @@ void AScoutUnit::AttackAction(AActor* Enemy)
     }
 }
 
-void AScoutUnit::ProximityAggro()
+void ARocketTruckUnit::ProximityAggro()
 {
     Super::ProximityAggro();
     if (CurrentTarget && IsValid(CurrentTarget)) return;
@@ -208,8 +205,7 @@ void AScoutUnit::ProximityAggro()
     }
 }
 
-void AScoutUnit::Ability()
+void ARocketTruckUnit::Ability()
 {
     Super::Ability();
 }
-

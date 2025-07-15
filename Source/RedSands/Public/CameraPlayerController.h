@@ -10,6 +10,7 @@
 #include "PlayerPawn.h"
 #include "EngineUtils.h"
 #include "ToDownHUD.h"
+#include "UBuildMenuWidget.h"
 #include "CameraPlayerController.generated.h"
 
 /**
@@ -20,9 +21,16 @@ class REDSANDS_API ACameraPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
-protected:
+public:
 	UPROPERTY(VisibleAnywhere)
 	APlayerPawn* PlayerPawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUBuildMenuWidget> BuildMenuWidgetClass;
+
+	UPROPERTY()
+	UUBuildMenuWidget* BuildMenuWidget;
+protected:
 
 	UPROPERTY()
 	AActor* SelectedActor;
@@ -83,7 +91,10 @@ protected:
 	
 	UFUNCTION()
 	void AttackMove(const FInputActionValue& Value);
-
+	
+	UFUNCTION()
+	void ShowBuildMenu(AMCVUnit* SelectedMCV);
+	
 	UFUNCTION()
 	void UnitAbility(const FInputActionValue& Value);
 

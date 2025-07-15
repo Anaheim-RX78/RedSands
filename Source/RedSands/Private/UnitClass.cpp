@@ -2,6 +2,7 @@
 #include "AIController.h"
 #include "CustomAIController.h"
 #include "EngineUtils.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -24,6 +25,26 @@ AUnitClass::AUnitClass()
 	SelectionBase->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Block);
 	SelectionBase->SetCollisionResponseToAllChannels(ECR_Ignore);
 
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
+	HealthBarWidget->SetupAttachment(RootComponent);
+	HealthBarWidget->SetDrawSize(FVector2D(50.0f, 10.0f));
+	HealthBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+	HealthBarWidget->SetVisibility(false);
+
+	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	// Load the Widget Blueprint class
+	static ConstructorHelpers::FClassFinder<UUserWidget> HealthBarBPClass(TEXT("/Game/HUD/BP_UWUnitHP.BP_UWUnitHP_C"));
+	if (HealthBarBPClass.Succeeded())
+	{
+		HealthBarWidgetClass = HealthBarBPClass.Class;
+		HealthBarWidget->SetWidgetClass(HealthBarWidgetClass);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to find BP_UWUnitHP_C"));
+	}
+	
 	GetCharacterMovement()->MaxWalkSpeed = 0;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;

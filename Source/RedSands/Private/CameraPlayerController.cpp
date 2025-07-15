@@ -68,6 +68,10 @@ void ACameraPlayerController::BeginPlay()
 			break;
 		}
 	}
+	if (BuildMenuWidgetClass)
+	{
+		BuildMenuWidget = CreateWidget<UUBuildMenuWidget>(this, BuildMenuWidgetClass);
+	}
 }
 
 void ACameraPlayerController::Move(const FInputActionValue& Value)
@@ -133,11 +137,25 @@ void ACameraPlayerController::Select(const FInputActionValue& Value)
 
 			SelectedActor = HitActor;
 			ISelectInterface::Execute_OnSelected(SelectedActor, true);
+
+			if (AMCVUnit* HitMCV = Cast<AMCVUnit>(HitActor))
+			{
+				ShowBuildMenu(HitMCV);
+			}
+			else if (BuildMenuWidget && BuildMenuWidget->IsInViewport())
+			{
+				BuildMenuWidget->RemoveFromViewport();
+			}
 		}
 		else if (SelectedActor)
 		{
 			ISelectInterface::Execute_OnSelected(SelectedActor, false);
 			SelectedActor = nullptr;
+
+			if (BuildMenuWidget && BuildMenuWidget->IsInViewport())
+			{
+				BuildMenuWidget->RemoveFromViewport();
+			}
 		}
 	}
 	else
@@ -146,6 +164,11 @@ void ACameraPlayerController::Select(const FInputActionValue& Value)
 		{
 			ISelectInterface::Execute_OnSelected(SelectedActor, false);
 			SelectedActor = nullptr;
+
+			if (BuildMenuWidget && BuildMenuWidget->IsInViewport())
+			{
+				BuildMenuWidget->RemoveFromViewport();
+			}
 		}
 	}
 }
@@ -266,6 +289,12 @@ void ACameraPlayerController::SelectMCV(const FInputActionValue& Value)
 		// Select the MCV
 		SelectedActor = PlayerMCV;
 		ISelectInterface::Execute_OnSelected(PlayerMCV, true);
+
+		// Show build menu
+		if (AMCVUnit* MCV = Cast<AMCVUnit>(PlayerMCV))
+		{
+			ShowBuildMenu(MCV);
+		}
 	}
 }
 
@@ -435,6 +464,22 @@ void ACameraPlayerController::AttackMove(const FInputActionValue& Value)
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No unit selected, attack move ignored"));
+	}
+}
+
+void ACameraPlayerController::ShowBuildMenu(AMCVUnit* SelectedMCV)
+{
+	if (BuildMenuWidget && SelectedMCV)
+	{
+		BuildMenuWidget->SetSelectedMCV(SelectedMCV);
+		if (!BuildMenuWidget->IsInViewport())
+		{
+			BuildMenuWidget->AddToViewport();
+		}
+	}
+	else if (BuildMenuWidget && BuildMenuWidget->IsInViewport())
+	{
+		BuildMenuWidget->RemoveFromViewport();
 	}
 }
 
