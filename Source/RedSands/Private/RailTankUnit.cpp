@@ -7,6 +7,7 @@
 #include "Components/ProgressBar.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 void ARailTankUnit::OnSelected_Implementation(bool bIsSelected)
 {
@@ -85,7 +86,7 @@ void ARailTankUnit::BeginPlay()
 
 void ARailTankUnit::AttackAction(AActor* Enemy)
 {
-	// Validate the enemy
+	    // Validate the enemy
     if (!Enemy || !IsValid(Enemy) || !bCanAttack)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack failed - Enemy invalid or cannot attack"), *GetName()));
@@ -130,6 +131,42 @@ void ARailTankUnit::AttackAction(AActor* Enemy)
         {
             GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Unit %s: Attacking %s, dealing %f damage, AttackInterval: %f"), *GetName(), *Enemy->GetName(), AttackDamage, AttackInterval));
             DamageableEnemy->Execute_OnDamaged(Enemy, AttackDamage);
+            
+            if (MuzzleFlashComponent && MuzzleFlashSystem)
+            {
+                MuzzleFlashComponent->ActivateSystem(true);
+                if (GetMesh()->DoesSocketExist("S_Muzzle"))
+                {
+                    FVector MuzzleLocation = GetMesh()->GetSocketLocation("S_Muzzle");
+                    UE_LOG(LogTemp, Log, TEXT("Turret fired: Muzzle socket at %s"), *MuzzleLocation.ToString());
+                    DrawDebugPoint(GetWorld(), MuzzleLocation, 10.0f, FColor::Red, false, 5.0f);
+                    if (FireSound)
+                    {
+                        UGameplayStatics::PlaySoundAtLocation(this, FireSound, MuzzleLocation);
+                        UE_LOG(LogTemp, Log, TEXT("Playing fire sound at %s"), *MuzzleLocation.ToString());
+                    }
+                    else
+                    {
+                        UE_LOG(LogTemp, Warning, TEXT("FireSound not assigned!"));
+                    }
+                }
+                else
+                {
+                    FVector ComponentLocation = MuzzleFlashComponent->GetComponentLocation();
+                    UE_LOG(LogTemp, Warning, TEXT("Muzzle socket not found! Using component location: %s"),
+                        *ComponentLocation.ToString());
+                    DrawDebugPoint(GetWorld(), ComponentLocation, 10.0f, FColor::Yellow, false, 5.0f);
+                    if (FireSound)
+                    {
+                        UGameplayStatics::PlaySoundAtLocation(this, FireSound, ComponentLocation);
+                        UE_LOG(LogTemp, Log, TEXT("Playing fire sound at %s"), *ComponentLocation.ToString());
+                    }
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Muzzle flash not set up!"));
+            }
         }
         else
         {
@@ -169,7 +206,7 @@ void ARailTankUnit::AttackAction(AActor* Enemy)
 
 void ARailTankUnit::ProximityAggro()
 {
-	Super::ProximityAggro();
+    Super::ProximityAggro();
     if (CurrentTarget && IsValid(CurrentTarget)) return;
 
     AActor* ClosestEnemy = nullptr;
@@ -204,7 +241,6 @@ void ARailTankUnit::ProximityAggro()
         }
     }
 }
-
 void ARailTankUnit::Ability()
 {
 	Super::Ability();

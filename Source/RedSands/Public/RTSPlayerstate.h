@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerState.h"
 #include "RTSPlayerstate.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMineralsChanged, float);
 /**
  * 
  */
@@ -26,4 +27,9 @@ public:
 
 	UFUNCTION()
 	void DeductMinerals(float UnitCost);
+
+	UFUNCTION()
+	void GainMinerals(float Amount);
+
+	FOnMineralsChanged OnMineralsChanged;
 };

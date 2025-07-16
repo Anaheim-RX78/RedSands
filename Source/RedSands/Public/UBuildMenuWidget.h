@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "MCVUnit.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/TextBlock.h"
 #include "UBuildMenuWidget.generated.h"
 
 /**
@@ -32,6 +33,14 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* UBRocketTruck;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI", meta = (BindWidget))
+	UTextBlock* MineralsText;
+
+	void OnMineralsChanged(float NewMinerals);
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	FText GetMineralsText() const;
 	
 	UFUNCTION()
 	void OnClickedScout();
@@ -41,4 +50,8 @@ public:
 
 	UFUNCTION()
 	void OnClickedRocketTruck();
+
+protected:
+	UPROPERTY()
+	APlayerState* CachedPlayerState;
 };

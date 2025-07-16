@@ -274,14 +274,19 @@ void ACameraPlayerController::SelectMCV(const FInputActionValue& Value)
 		// Clear current selection
 		if (SelectedActor)
 		{
-			ISelectInterface::Execute_OnSelected(SelectedActor, false);
+			if (SelectedActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+			{
+				ISelectInterface::Execute_OnSelected(SelectedActor, false);
+				UE_LOG(LogTemp, Log, TEXT("SelectMCV: Deselected single actor: %s"), *SelectedActor->GetName());
+			}
 			SelectedActor = nullptr;
 		}
 		for (AActor* Actor : SelectedActors)
 		{
-			if (Actor && Actor->Implements<USelectInterface>())
+			if (Actor && Actor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
 			{
 				ISelectInterface::Execute_OnSelected(Actor, false);
+				UE_LOG(LogTemp, Log, TEXT("SelectMCV: Deselected multi-selected actor: %s"), *Actor->GetName());
 			}
 		}
 		SelectedActors.Empty();
@@ -289,6 +294,7 @@ void ACameraPlayerController::SelectMCV(const FInputActionValue& Value)
 		// Select the MCV
 		SelectedActor = PlayerMCV;
 		ISelectInterface::Execute_OnSelected(PlayerMCV, true);
+		UE_LOG(LogTemp, Log, TEXT("SelectMCV: Selected MCV: %s"), *PlayerMCV->GetName());
 
 		// Show build menu
 		if (AMCVUnit* MCV = Cast<AMCVUnit>(PlayerMCV))
@@ -296,8 +302,11 @@ void ACameraPlayerController::SelectMCV(const FInputActionValue& Value)
 			ShowBuildMenu(MCV);
 		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SelectMCV: PlayerMCV is invalid"));
+	}
 }
-
 void ACameraPlayerController::SelectCombatUnits(const FInputActionValue& Value)
 {
 	
@@ -530,24 +539,57 @@ void ACameraPlayerController::AttackOrder(AActor* UnitActor, AActor* TargetActor
 
 void ACameraPlayerController::MultiSelectActors(TArray<AActor*> BoxSelectActors)
 {
-	SelectedActor = nullptr; // Clear any previous single-click selection
+	// Deselect current SelectedActor (e.g., MCV from SelectMCV)
+	if (SelectedActor)
+	{
+		if (SelectedActor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
+		{
+			ISelectInterface::Execute_OnSelected(SelectedActor, false);
+			UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Deselected single actor: %s"), *SelectedActor->GetName());
+		}
+		SelectedActor = nullptr;
+	}
 
+	// Deselect current multi-selected actors
 	for (AActor* Actor : SelectedActors)
 	{
 		if (Actor && Actor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
 		{
 			ISelectInterface::Execute_OnSelected(Actor, false);
+			UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Deselected actor: %s"), *Actor->GetName());
 		}
 	}
-
 	SelectedActors.Empty();
 
+	// Select new actors
+	bool bHasMCV = false;
 	for (AActor* Actor : BoxSelectActors)
 	{
 		if (Actor && Actor->GetClass()->ImplementsInterface(USelectInterface::StaticClass()))
 		{
 			ISelectInterface::Execute_OnSelected(Actor, true);
 			SelectedActors.Add(Actor);
+			UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Selected actor: %s"), *Actor->GetName());
+			if (Actor == PlayerMCV)
+			{
+				bHasMCV = true;
+			}
 		}
 	}
+
+	// Manage build menu
+	if (bHasMCV)
+	{
+		if (AMCVUnit* MCV = Cast<AMCVUnit>(PlayerMCV))
+		{
+			ShowBuildMenu(MCV);
+			UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Showed build menu for MCV"));
+		}
+	}
+	else if (BuildMenuWidget && BuildMenuWidget->IsInViewport())
+	{
+		BuildMenuWidget->RemoveFromViewport();
+		UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Hid build menu (no MCV in selection)"));
+	}
 }
+
