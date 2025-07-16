@@ -4,6 +4,8 @@
 #include "GameFramework/Character.h"
 #include "SelectInterface.h"
 #include "DamageInterface.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UnitClass.generated.h"
 
@@ -74,6 +76,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* PlaceholderMesh;
 
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	//USkeletalMeshComponent* SkeletalMeshComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	USoundBase* FireSound;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UWidgetComponent* HealthBarWidget;
 
@@ -81,6 +89,12 @@ public:
 	TSubclassOf<UUserWidget> HealthBarWidgetClass;
 
 	FTimerHandle HealthBarHideTimer;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UNiagaraComponent* MuzzleFlashComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	UNiagaraSystem* MuzzleFlashSystem;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector AttackMoveTarget;

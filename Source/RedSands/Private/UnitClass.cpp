@@ -18,6 +18,7 @@ AUnitClass::AUnitClass()
 	PlaceholderMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	PlaceholderMesh->SetCollisionProfileName(TEXT("BlockAll"));
 	
+	
 	SelectionBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SelectionBase"));
 	SelectionBase->SetupAttachment(RootComponent);
 	SelectionBase->SetVisibility(false);
@@ -51,6 +52,10 @@ AUnitClass::AUnitClass()
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	AIControllerClass = ACustomAIController::StaticClass();
+
+	MuzzleFlashComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("MuzzleFlash"));
+	MuzzleFlashComponent->SetupAttachment(GetMesh(), TEXT("S_Muzzle"));
+	MuzzleFlashComponent->SetAutoActivate(false); // Only activate when firing
 }
 
 

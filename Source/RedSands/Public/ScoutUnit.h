@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UnitClass.h"
+
 #include "ScoutUnit.generated.h"
 
 /**
@@ -14,6 +15,8 @@ class REDSANDS_API AScoutUnit : public AUnitClass
 {
 	GENERATED_BODY()
 public:
+
+	
 	virtual void OnSelected_Implementation(bool bIsSelected) override;
 	virtual void OnDamaged_Implementation(float DamageAmount) override;
 	virtual void BeginPlay() override;
