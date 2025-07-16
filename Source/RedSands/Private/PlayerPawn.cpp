@@ -23,7 +23,7 @@ APlayerPawn::APlayerPawn()
 void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	SpringArm->TargetArmLength = 3600.f;
+	SpringArm->TargetArmLength = 2000.f;
 }
 
 // Called every frame
@@ -66,7 +66,7 @@ void APlayerPawn::SetZoomInput(const float& ZoomInput)
 	//TODO
 	//ASSEGNARE VALORE MASSIMO E MINIMO DELLO ZOOM
 
-	NewZoom = FMath::Clamp(NewZoom, 2000.f, 5000.f);
+	NewZoom = FMath::Clamp(NewZoom, 1000.f, 3000.f);
 	
 	SpringArm->TargetArmLength = NewZoom;
 }
