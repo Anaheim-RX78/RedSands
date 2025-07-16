@@ -2,10 +2,13 @@
 
 
 #include "MCVUnit.h"
+
+#include "CameraPlayerController.h"
 #include "CustomAIController.h"
 #include "ScoutUnit.h"
 #include "Components/ProgressBar.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 void AMCVUnit::OnSelected_Implementation(bool bIsSelected)
 {
@@ -61,13 +64,18 @@ void AMCVUnit::OnDamaged_Implementation(float DamageAmount)
         CurrentState = EUnitState::Idle;
         bFollowingOrders = false;
         Destroy();
+    	if (ACameraPlayerController* PlayerController = Cast<ACameraPlayerController>(GetWorld()->GetFirstPlayerController()))
+    	{
+    		PlayerController->GameOver(false);
+    	}
     }
 }
 
 void AMCVUnit::BeginPlay()
 {
 	Super::BeginPlay();
-	Health = 2000.f;
+	Health = 1000.f;
+	CurrentHealth = Health;
 	Battery = 1000.f;
 	Speed = 500.f;
 	AttackRange = 0.f;
@@ -110,6 +118,16 @@ void AMCVUnit::StartProducingUnit(TSubclassOf<AActor> UnitClass)
 		bIsProducing = true;
 		PlayerStateT->DeductMinerals(CostMinerals);
 		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("BUILDING...")));
+
+		if (ProductionStartSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ProductionStartSound, GetActorLocation());
+			UE_LOG(LogTemp, Log, TEXT("MCVUnit %s: Playing production start sound at %s"), *GetName(), *GetActorLocation().ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MCVUnit %s: ProductionStartSound not assigned"), *GetName());
+		}
 		
 		GetWorld()->GetTimerManager().SetTimer(ProductionTimerHandle, [this, UnitClass]()
 		{

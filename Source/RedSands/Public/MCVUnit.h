@@ -39,7 +39,10 @@ public:
 	void CompleteProduction(TSubclassOf<AActor> UnitClass);
 
 	UPROPERTY(EditAnywhere, Category = "Units")
-	FVector SpawnOffset = FVector(0.f, -800.f, 0.f);
+	FVector SpawnOffset = FVector(500.f, 500.f, 0.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* ProductionStartSound;
 
 private:
 	FTimerHandle ProductionTimerHandle;

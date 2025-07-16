@@ -30,6 +30,21 @@ public:
 
 	UPROPERTY()
 	UUBuildMenuWidget* BuildMenuWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> VictoryWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* GameOverWidget;
+
+	UPROPERTY()
+	UUserWidget* VictoryWidget;
+	
+	UFUNCTION()
+	void GameOver(bool winorlose);
 protected:
 
 	UPROPERTY()
@@ -103,4 +118,5 @@ protected:
 
 	UFUNCTION()
 	void MultiSelectActors(TArray<AActor*> BoxSelectActors);
+
 };

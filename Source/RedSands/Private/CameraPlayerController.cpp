@@ -8,6 +8,7 @@
 #include "MCVUnit.h"
 #include "SelectInterface.h"
 #include "UnitClass.h"
+#include "Kismet/GameplayStatics.h"
 
 void ACameraPlayerController::SetupInputComponent()
 {
@@ -592,4 +593,45 @@ void ACameraPlayerController::MultiSelectActors(TArray<AActor*> BoxSelectActors)
 		UE_LOG(LogTemp, Log, TEXT("MultiSelectActors: Hid build menu (no MCV in selection)"));
 	}
 }
+
+void ACameraPlayerController::GameOver(bool winorlose)
+{
+	if (!winorlose)
+	{
+		if (GameOverWidgetClass)
+		{
+			GameOverWidget = CreateWidget<UUserWidget>(this, GameOverWidgetClass);
+			if (GameOverWidget)
+			{
+				GameOverWidget->AddToViewport();
+				SetShowMouseCursor(true);
+				SetInputMode(FInputModeUIOnly());
+				UGameplayStatics::SetGamePaused(GetWorld(), true);
+				UE_LOG(LogTemp, Log, TEXT("CameraPlayerController: Game over screen shown"));
+			}
+		}
+		
+	
+	}
+	else if (winorlose)
+	{
+		if (VictoryWidgetClass)
+		{
+			VictoryWidget = CreateWidget<UUserWidget>(this, VictoryWidgetClass);
+			if (VictoryWidget)
+			{
+				VictoryWidget->AddToViewport();
+				SetShowMouseCursor(true);
+				SetInputMode(FInputModeUIOnly());
+				UGameplayStatics::SetGamePaused(GetWorld(), true);
+				UE_LOG(LogTemp, Log, TEXT("CameraPlayerController: Victory screen shown"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CameraPlayerController: VictoryWidgetClass not assigned"));
+		}
+	}
+}
+
 

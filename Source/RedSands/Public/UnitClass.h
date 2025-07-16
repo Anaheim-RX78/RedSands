@@ -54,6 +54,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AttackRange;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AcceptanceRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AttackDamage;
@@ -107,6 +110,9 @@ protected:
 
 	UPROPERTY()
 	FTimerHandle AttackTimerHandle;
+	
+	UPROPERTY()
+	float LastAttackTime = -1000.0f;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -136,5 +142,7 @@ public:
 
 	UFUNCTION()
 	void UpdateAttackMove();
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 };
 

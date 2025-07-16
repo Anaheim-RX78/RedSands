@@ -206,8 +206,7 @@ void AUnitClass::PursueEnemy(AActor* Enemy)
 		if (ACustomAIController* AIController = Cast<ACustomAIController>(GetController()))
 		{
 			CurrentState = EUnitState::Pursuing;
-			bFollowingOrders = true;
-			float AcceptanceRadius = 350.0f; // Reduced to account for capsule radii (~90–115 units each)
+			bFollowingOrders = true;// Reduced to account for capsule radii (~90–115 units each)
 			EPathFollowingRequestResult::Type Result = AIController->MoveToActor(Enemy, AcceptanceRadius);
 			/*UE_LOG(LogTemp, Log, TEXT("Unit %s: Pursuing %s with acceptance radius %f, MoveToActor result: %d"), 
 				   *GetName(), *Enemy->GetName(), AcceptanceRadius, (int32)Result);*/
@@ -294,4 +293,18 @@ void AUnitClass::UpdateAttackMove()
         }
         // No else clause; continue moving if no enemy is found
     }
+}
+
+void AUnitClass::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AttackTimerHandle);
+	}
+	CurrentTarget = nullptr;
+	CurrentState = EUnitState::Idle;
+	bFollowingOrders = false;
+	PrimaryActorTick.bCanEverTick = false; // Disable Tick
+	UE_LOG(LogTemp, Log, TEXT("Unit %s: EndPlay called, timers and overlaps cleared"), *GetName());
 }

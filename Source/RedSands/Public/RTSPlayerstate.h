@@ -16,9 +16,11 @@ class REDSANDS_API ARTSPlayerstate : public APlayerState
 	GENERATED_BODY()
 
 public:
+	ARTSPlayerstate();
+	
 	UPROPERTY(EditAnywhere)
-	float Minerals = 1000;
-
+	float Minerals;
+	
 	UFUNCTION()
 	void BeginPlay() override;
 	

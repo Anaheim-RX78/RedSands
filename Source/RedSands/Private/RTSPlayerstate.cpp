@@ -3,12 +3,20 @@
 
 #include "RTSPlayerstate.h"
 
+
+ARTSPlayerstate::ARTSPlayerstate()
+{
+	Minerals=1000;
+}
+
 void ARTSPlayerstate::BeginPlay()
 {
 	Super::BeginPlay();
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Initial Minerals: %f"), Minerals));
 	OnMineralsChanged.Broadcast(Minerals);
 }
+
+
 
 bool ARTSPlayerstate::IsMineralsAvailable(float UnitCost)
 {
