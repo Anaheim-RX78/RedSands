@@ -83,8 +83,9 @@ void AUnitClass::Tick(float DeltaTime)
                 float CapsuleOffset = 200.0f;
                 float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
                 float DistanceToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
-                UE_LOG(LogTemp, Log, TEXT("Unit %s: Move completed, Distance to %s: %f (Effective Range: %f)"), 
-                       *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange);
+
+            	//UE_LOG(LogTemp, Log, TEXT("Unit %s: Move completed, Distance to %s: %f (Effective Range: %f)"), 
+                  //     *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange);
                 if (DistanceToTarget <= EffectiveAttackRange)
                 {
                     CurrentState = EUnitState::Attacking;
@@ -104,7 +105,7 @@ void AUnitClass::Tick(float DeltaTime)
                 bAttackMove = false;
                 bFollowingOrders = false;
                 AttackMoveTarget = FVector::ZeroVector;
-                UE_LOG(LogTemp, Log, TEXT("Unit %s: Reached attack move target %s, no enemies found"), *GetName(), *AttackMoveTarget.ToString());
+               // UE_LOG(LogTemp, Log, TEXT("Unit %s: Reached attack move target %s, no enemies found"), *GetName(), *AttackMoveTarget.ToString());
             }
         }
     }
@@ -123,7 +124,7 @@ void AUnitClass::Tick(float DeltaTime)
             float CapsuleOffset = 200.0f;
             float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
             float DistanceToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
-            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Unit %s: Pursuing %s, Distance: %f (Effective Range: %f)"), *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange));
+        //    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Unit %s: Pursuing %s, Distance: %f (Effective Range: %f)"), *GetName(), *CurrentTarget->GetName(), DistanceToTarget, EffectiveAttackRange));
             if (DistanceToTarget <= EffectiveAttackRange)
             {
                 CurrentState = EUnitState::Attacking;
@@ -212,8 +213,8 @@ void AUnitClass::PursueEnemy(AActor* Enemy)
 				   *GetName(), *Enemy->GetName(), AcceptanceRadius, (int32)Result);*/
 
 			// Debug visualization
-			DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AcceptanceRadius, 12, FColor::Blue, false, 0.1f);
-			DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AttackRange, 12, FColor::Red, false, 0.1f);
+			//DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AcceptanceRadius, 12, FColor::Blue, false, 0.1f);
+			//DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), AttackRange, 12, FColor::Red, false, 0.1f);
 
 			// Log actual distance to confirm stopping point
 			float DistanceToEnemy = FVector::Dist(GetActorLocation(), Enemy->GetActorLocation());

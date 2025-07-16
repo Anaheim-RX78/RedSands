@@ -73,6 +73,8 @@ void ACameraPlayerController::BeginPlay()
 	{
 		BuildMenuWidget = CreateWidget<UUBuildMenuWidget>(this, BuildMenuWidgetClass);
 	}
+
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
 }
 
 void ACameraPlayerController::Move(const FInputActionValue& Value)
@@ -622,7 +624,6 @@ void ACameraPlayerController::GameOver(bool winorlose)
 			{
 				VictoryWidget->AddToViewport();
 				SetShowMouseCursor(true);
-				SetInputMode(FInputModeUIOnly());
 				UGameplayStatics::SetGamePaused(GetWorld(), true);
 				UE_LOG(LogTemp, Log, TEXT("CameraPlayerController: Victory screen shown"));
 			}

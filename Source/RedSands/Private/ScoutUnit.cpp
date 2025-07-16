@@ -90,27 +90,59 @@ void AScoutUnit::BeginPlay()
    
 }
 
+
 void AScoutUnit::AttackAction(AActor* Enemy)
 {
+    if (!IsValid(this) || !GetWorld() || !IsValid(GetController()))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ScoutUnit %s: AttackAction aborted - Invalid unit, world, or controller"), *GetName());
+        return;
+    }
+
     // Validate the enemy
     if (!Enemy || !IsValid(Enemy) || !bCanAttack)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack failed - Enemy invalid or cannot attack"), *GetName()));
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ScoutUnit %s: Attack failed - Enemy invalid or cannot attack"), *GetName()));
         CurrentState = EUnitState::Idle;
         bFollowingOrders = false;
         CurrentTarget = nullptr;
-        GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        if (GetWorld())
+        {
+            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        }
         return;
     }
 
     // Check if the enemy implements the damage interface
     if (!Enemy->GetClass()->ImplementsInterface(UDamageInterface::StaticClass()))
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack failed - Enemy does not implement IDamageInterface"), *GetName()));
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ScoutUnit %s: Attack failed - %s does not implement IDamageInterface"), *GetName(), *Enemy->GetName()));
         CurrentState = EUnitState::Idle;
         bFollowingOrders = false;
         CurrentTarget = nullptr;
-        GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        if (GetWorld())
+        {
+            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        }
+        return;
+    }
+
+    // Check team
+    int32 TargetTeamID = 1;
+    if (AUnitClass* Unit = Cast<AUnitClass>(Enemy))
+    {
+        TargetTeamID = Unit->TeamIDU;
+    }
+    if (TargetTeamID == TeamIDU)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ScoutUnit %s: Attack failed - %s is same team"), *GetName(), *Enemy->GetName()));
+        CurrentState = EUnitState::Idle;
+        bFollowingOrders = false;
+        CurrentTarget = nullptr;
+        if (GetWorld())
+        {
+            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        }
         return;
     }
 
@@ -118,15 +150,15 @@ void AScoutUnit::AttackAction(AActor* Enemy)
     float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastAttackTime < AttackInterval)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Unit %s: Attack on cooldown, %f seconds remaining"), *GetName(), AttackInterval - (CurrentTime - LastAttackTime)));
-        return; // Still in cooldown
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("ScoutUnit %s: Attack on cooldown, %f seconds remaining"), *GetName(), AttackInterval - (CurrentTime - LastAttackTime)));
+        return;
     }
 
     // Account for collision capsule radii
     float CapsuleOffset = 200.0f;
-    float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f
+    float EffectiveAttackRange = AttackRange + 10.0f + CapsuleOffset; // 710.0f + 200.0f
     float DistanceToEnemy = FVector::Dist(GetActorLocation(), Enemy->GetActorLocation());
-    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Unit %s: Distance to %s: %f (Effective Range: %f)"), *GetName(), *Enemy->GetName(), DistanceToEnemy, EffectiveAttackRange));
+    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("ScoutUnit %s: Distance to %s: %f (Effective Range: %f)"), *GetName(), *Enemy->GetName(), DistanceToEnemy, EffectiveAttackRange));
 
     if (DistanceToEnemy <= EffectiveAttackRange)
     {
@@ -134,6 +166,10 @@ void AScoutUnit::AttackAction(AActor* Enemy)
         if (AController* StopController = GetController())
         {
             StopController->StopMovement();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ScoutUnit %s: No valid controller to stop movement"), *GetName());
         }
 
         // Enemy is in range, attack
@@ -144,69 +180,93 @@ void AScoutUnit::AttackAction(AActor* Enemy)
         // Apply damage
         if (IDamageInterface* DamageableEnemy = Cast<IDamageInterface>(Enemy))
         {
-            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Unit %s: Attacking %s, dealing %f damage"), *GetName(), *Enemy->GetName(), AttackDamage));
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("ScoutUnit %s: Attacking %s, dealing %f damage"), *GetName(), *Enemy->GetName(), AttackDamage));
             DamageableEnemy->Execute_OnDamaged(Enemy, AttackDamage);
 
-            if (MuzzleFlashComponent && MuzzleFlashSystem)
+            // Visual and sound effects
+            if (MuzzleFlashComponent && MuzzleFlashSystem && IsValid(MuzzleFlashComponent))
             {
                 MuzzleFlashComponent->ActivateSystem(true);
-                FVector EffectLocation = GetMesh()->DoesSocketExist("S_Muzzle")
+                FVector EffectLocation = GetMesh() && GetMesh()->DoesSocketExist("S_Muzzle")
                     ? GetMesh()->GetSocketLocation("S_Muzzle")
                     : MuzzleFlashComponent->GetComponentLocation();
-                UGameplayStatics::PlaySoundAtLocation(this, FireSound, EffectLocation);
-                DrawDebugPoint(GetWorld(), EffectLocation, 10.0f, FColor::Red, false, 5.0f);
+                if (FireSound && IsValid(FireSound))
+                {
+                    UGameplayStatics::PlaySoundAtLocation(this, FireSound, EffectLocation);
+                }
+                if (GetWorld())
+                {
+                    DrawDebugPoint(GetWorld(), EffectLocation, 10.0f, FColor::Red, false, 5.0f);
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("ScoutUnit %s: MuzzleFlashComponent or MuzzleFlashSystem invalid"), *GetName());
             }
 
             // Update last attack time
             LastAttackTime = CurrentTime;
-            UE_LOG(LogTemp, Log, TEXT("Unit %s: Attacked %s, LastAttackTime = %f"), *GetName(), *Enemy->GetName(), LastAttackTime);
+            UE_LOG(LogTemp, Log, TEXT("ScoutUnit %s: Attacked %s, LastAttackTime = %f"), *GetName(), *Enemy->GetName(), LastAttackTime);
         }
         else
         {
-            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Unit %s: Attack failed - Enemy cast to IDamageInterface failed"), *GetName()));
+           // GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ScoutUnit %s: Attack failed - Enemy cast to IDamageInterface failed"), *GetName()));
             CurrentState = EUnitState::Idle;
             bFollowingOrders = false;
             CurrentTarget = nullptr;
-            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+            if (GetWorld())
+            {
+                GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+            }
             return;
         }
 
         // Start attack cooldown timer
-        GetWorld()->GetTimerManager().SetTimer(
-            AttackTimerHandle,
-            [this]()
-            {
-                if (CurrentState == EUnitState::Attacking && CurrentTarget && IsValid(CurrentTarget))
+        if (GetWorld())
+        {
+            GetWorld()->GetTimerManager().SetTimer(
+                AttackTimerHandle,
+                [this]()
                 {
-                    AttackAction(CurrentTarget); // Continue attacking current target
-                }
-                else
-                {
-                    CurrentState = EUnitState::Idle;
-                    bFollowingOrders = false;
-                    CurrentTarget = nullptr;
-                    if (GetWorld())
+                    if (!IsValid(this) || !GetWorld())
                     {
-                        GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+                        UE_LOG(LogTemp, Warning, TEXT("ScoutUnit %s: Attack timer callback aborted - Invalid unit or world"), *GetName());
+                        return;
                     }
-                    UE_LOG(LogTemp, Log, TEXT("Unit %s: Attack timer stopped - Target invalid or not attacking"), *GetName());
-                }
-            },
-            AttackInterval > 0.0f ? AttackInterval : 1.0f,
-            false
-        );
+                    if (CurrentState == EUnitState::Attacking && CurrentTarget && IsValid(CurrentTarget))
+                    {
+                        AttackAction(CurrentTarget); // Continue attacking
+                    }
+                    else
+                    {
+                        CurrentState = EUnitState::Idle;
+                        bFollowingOrders = false;
+                        CurrentTarget = nullptr;
+                        if (GetWorld())
+                        {
+                            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+                        }
+                       // UE_LOG(LogTemp, Log, TEXT("ScoutUnit %s: Attack timer stopped - Target invalid or not attacking"), *GetName());
+                    }
+                },
+                AttackInterval > 0.0f ? AttackInterval : 1.0f,
+                false
+            );
+        }
     }
     else
     {
         // Enemy out of range, pursue
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, FString::Printf(TEXT("Unit %s: Enemy %s out of range (%f > %f), pursuing"), *GetName(), *Enemy->GetName(), DistanceToEnemy, EffectiveAttackRange));
+        //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, FString::Printf(TEXT("ScoutUnit %s: Enemy %s out of range (%f > %f), pursuing"), *GetName(), *Enemy->GetName(), DistanceToEnemy, EffectiveAttackRange));
         CurrentState = EUnitState::Pursuing;
         bFollowingOrders = true;
         CurrentTarget = Enemy;
+        if (GetWorld())
+        {
+            GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
+        }
         PursueEnemy(Enemy);
-        GetWorld()->GetTimerManager().ClearTimer(AttackTimerHandle);
     }
-
 }
 
 void AScoutUnit::ProximityAggro()
